@@ -25,7 +25,6 @@ func Base32IdValidator(fl validator.FieldLevel) bool {
 	return err == nil
 }
 
-
 type ExampleBase32Id struct {
 	ID string `validate:"baseid32"`
 }

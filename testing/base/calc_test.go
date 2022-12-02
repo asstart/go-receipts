@@ -8,12 +8,10 @@ import (
 )
 
 /*
-
 Example of the simplest test in go
 
 Can run all tests with: go test ./...
 Or particular test with: go test -v -run Addition
-
 */
 func TestAddition(t *testing.T) {
 	a, b := 2, 3
@@ -26,11 +24,9 @@ func TestAddition(t *testing.T) {
 }
 
 /*
-
 Example of using test tables for testing multiple cases in one test
 tt - stands for test table
 tc - stands for test case
-
 */
 func TestSubstraction(t *testing.T) {
 	tt := []struct {
@@ -50,12 +46,10 @@ func TestSubstraction(t *testing.T) {
 }
 
 /*
-
 Example of using test tables for testing multiple cases in one test
 But adding additional information as name to identify which case was failed
 tt - stands for test table
 tc - stands for test case
-
 */
 func TestMuliplication(t *testing.T) {
 	tt := []struct {
@@ -77,14 +71,12 @@ func TestMuliplication(t *testing.T) {
 }
 
 /*
-
 Example of using test tables for testing multiple cases in one test
 But adding additional information as name to identify which case was failed
 And run each tc as subtest, so now we're able to run only certain set of test instead of all
 with command: go test -v -run Division/8 (will start first and third test)
 tt - stands for test table
 tc - stands for test case
-
 */
 func TestDivision(t *testing.T) {
 	tt := []struct {
@@ -111,13 +103,11 @@ func TestDivision(t *testing.T) {
 }
 
 /*
-
 Test will appear in documentation
 For testing run: godoc -http=:6060
-
 */
 func ExampleAdd() {
-	s := base.Add(1,2,3)
+	s := base.Add(1, 2, 3)
 	fmt.Printf("sum of 1,2,3 is %v", s)
 	// Output:
 	// sum of 1,2,3 is 6

@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -49,7 +50,7 @@ type CustomFlatStructure struct {
 	Date time.Time
 }
 
-func ExecWithNestedMapDefaultMapType(conStr string, db string, coll string) (CustomNestedMapStruct, error) {
+func ExecWithNestedMapDefaultMapType(conStr string, db string, coll string, id_postfix string) (CustomNestedMapStruct, error) {
 	con, err := getConnection(conStr)
 	if err != nil {
 		return CustomNestedMapStruct{}, err
@@ -57,40 +58,89 @@ func ExecWithNestedMapDefaultMapType(conStr string, db string, coll string) (Cus
 
 	c := con.Database(db).Collection(coll)
 
-	err = insertNested(c)
+	id := fmt.Sprintf("nested_%v", id_postfix)
+
+	err = insertNested(c, id)
 	if err != nil {
 		return CustomNestedMapStruct{}, err
 	}
-	res, err := readNestedDefault(c)
+	res, err := readNestedDefault(c, id)
 	if err != nil {
 		return CustomNestedMapStruct{}, err
 	}
 	return res, nil
 }
 
-func ExecWithNestedMapCustomMapType(conStr string, db string, coll string) (CustomNestedMapStruct, error) {
+func ExecWithNestedMapAllTypes(conStr string, db string, coll string, id_postfix string) (CustomNestedMapStruct, error) {
 	con, err := getConnection(conStr)
 	if err != nil {
 		return CustomNestedMapStruct{}, err
 	}
 
+	id := fmt.Sprintf("rich_nested_%v", id_postfix)
+
 	c := con.Database(db).Collection(coll)
 
-	err = insertNested(c)
+	err = insertNestedAllTypes(c, id)
+	if err != nil {
+		return CustomNestedMapStruct{}, err
+	}
+	res, err := readNestedDefault(c, id)
+	if err != nil {
+		return CustomNestedMapStruct{}, err
+	}
+	return res, nil
+}
+
+func ExecWithNestedMapAllTypesCustomRegister(conStr string, db string, coll string, id_postfix string) (CustomNestedMapStruct, error) {
+	con, err := getConnection(conStr)
+	if err != nil {
+		return CustomNestedMapStruct{}, err
+	}
+
+	id := fmt.Sprintf("rich_nested_%v", id_postfix)
+
+	c := con.Database(db).Collection(coll)
+
+	err = insertNestedAllTypes(c, id)
 	if err != nil {
 		return CustomNestedMapStruct{}, err
 	}
 
 	reg := customRegistry()
 
-	res, err := readNestedWithCustomMapType(c, reg)
+	res, err := readNestedWithCustomMapType(c, reg, id)
 	if err != nil {
 		return CustomNestedMapStruct{}, err
 	}
 	return res, nil
 }
 
-func ExecWithFlat(conStr, db string, coll string) (CustomFlatStructure, error) {
+func ExecWithNestedMapCustomMapType(conStr string, db string, coll string, id_postfix string) (CustomNestedMapStruct, error) {
+	con, err := getConnection(conStr)
+	if err != nil {
+		return CustomNestedMapStruct{}, err
+	}
+
+	c := con.Database(db).Collection(coll)
+
+	id := fmt.Sprintf("nested_%v", id_postfix)
+
+	err = insertNested(c, id)
+	if err != nil {
+		return CustomNestedMapStruct{}, err
+	}
+
+	reg := customRegistry()
+
+	res, err := readNestedWithCustomMapType(c, reg, id)
+	if err != nil {
+		return CustomNestedMapStruct{}, err
+	}
+	return res, nil
+}
+
+func ExecWithFlat(conStr, db string, coll string, id_postfix string) (CustomFlatStructure, error) {
 	con, err := getConnection(conStr)
 	if err != nil {
 		return CustomFlatStructure{}, err
@@ -98,20 +148,22 @@ func ExecWithFlat(conStr, db string, coll string) (CustomFlatStructure, error) {
 
 	c := con.Database(db).Collection(coll)
 
-	err = insertFlat(c)
+	id := fmt.Sprintf("flat_%v", id_postfix)
+
+	err = insertFlat(c, id)
 	if err != nil {
 		return CustomFlatStructure{}, err
 	}
-	res, err := readFlat(c)
+	res, err := readFlat(c, id)
 	if err != nil {
 		return CustomFlatStructure{}, err
 	}
 	return res, nil
 }
 
-func insertNested(c *mongo.Collection) error {
+func insertNested(c *mongo.Collection, id string) error {
 	doc := CustomNestedMapStruct{
-		ID: "nested",
+		ID: id,
 		Data: map[string]interface{}{
 			"createdAt": time.Now(),
 		},
@@ -125,13 +177,56 @@ func insertNested(c *mongo.Collection) error {
 	return err
 }
 
-func readNestedDefault(c *mongo.Collection) (CustomNestedMapStruct, error) {
+func insertNestedAllTypes(c *mongo.Collection, id string) error {
+	now := time.Now()
+	doc := CustomNestedMapStruct{
+		ID: id,
+		Data: map[string]interface{}{
+			"int8":    int8(1),
+			"int16":   int16(2),
+			"int32":   int32(3),
+			"int64":   int64(4),
+			"int":     int(5),
+			"uint8":   uint8(6),
+			"uint16":  uint16(7),
+			"uint32":  uint32(8),
+			"uint64":  uint64(9),
+			"uint":    uint(10),
+			"float32": float32(1.4),
+			"float64": float64(2.3),
+			"bool":    true,
+			// "complex64":                        complex64(complex(1, 1)),
+			// "complex128":                       complex128(complex(1, 1)),
+			"string":                           "some string",
+			"byte":                             byte(11),
+			"rune":                             rune(12),
+			"array":                            [3]int{1, 2, 3},
+			"slice":                            []int{1, 2, 3},
+			"time.Time":                        time.Now(),
+			"map[string]string":                map[string]string{"1": "11", "2": "22"},
+			"map[string]interface - primitive": map[string]interface{}{"1": 1, "2": 3.5, "3": true},
+			"struct":                           CustomFlatStructure{"1", time.Now()},
+			"map[string]interface - with nested types": map[string]interface{}{"1": CustomFlatStructure{"1", time.Now()}},
+			"time.Time pointer":                        &now,
+		},
+	}
+
+	_, err := c.InsertOne(
+		context.Background(),
+		doc,
+		nil,
+	)
+
+	return err
+}
+
+func readNestedDefault(c *mongo.Collection, id string) (CustomNestedMapStruct, error) {
 	var res CustomNestedMapStruct
 
 	err := c.FindOne(
 		context.Background(),
 		primitive.M{
-			"id": "nested",
+			"id": id,
 		},
 		nil,
 	).Decode(&res)
@@ -150,14 +245,16 @@ func customRegistry() *bsoncodec.Registry {
 	bsoncodec.DefaultValueDecoders{}.RegisterDefaultDecoders(rb)
 
 	rb.RegisterTypeMapEntry(bsontype.DateTime, reflect.TypeOf(time.Time{}))
+	rb.RegisterTypeMapEntry(bson.TypeArray, reflect.TypeOf([]interface{}{}))
+
 	return rb.Build()
 }
 
-func readNestedWithCustomMapType(c *mongo.Collection, registry *bsoncodec.Registry) (CustomNestedMapStruct, error) {
+func readNestedWithCustomMapType(c *mongo.Collection, registry *bsoncodec.Registry, id string) (CustomNestedMapStruct, error) {
 	sr := c.FindOne(
 		context.Background(),
 		primitive.M{
-			"id": "nested",
+			"id": id,
 		},
 		nil,
 	)
@@ -179,9 +276,9 @@ func readNestedWithCustomMapType(c *mongo.Collection, registry *bsoncodec.Regist
 	return res, nil
 }
 
-func insertFlat(c *mongo.Collection) error {
+func insertFlat(c *mongo.Collection, id string) error {
 	doc := CustomFlatStructure{
-		ID:   "flat",
+		ID:   id,
 		Date: time.Now(),
 	}
 
@@ -193,13 +290,13 @@ func insertFlat(c *mongo.Collection) error {
 	return err
 }
 
-func readFlat(c *mongo.Collection) (CustomFlatStructure, error) {
+func readFlat(c *mongo.Collection, id string) (CustomFlatStructure, error) {
 	var res CustomFlatStructure
 
 	err := c.FindOne(
 		context.Background(),
 		primitive.M{
-			"id": "flat",
+			"id": id,
 		},
 		nil,
 	).Decode(&res)

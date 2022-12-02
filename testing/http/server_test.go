@@ -32,7 +32,6 @@ func TestHandler(t *testing.T) {
 
 			http.Handler(w, r)
 
-		
 			if w.Code != tc.expectedCode {
 				t.Fatalf("expected: %v, actual: %v", tc.expectedCode, w.Code)
 			}
